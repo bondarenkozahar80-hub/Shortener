@@ -1,0 +1,53 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wbservice
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      - CONFIG_PATH=/app/config.yaml
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=17051989
+      - DB_NAME=postgres
+    volumes:
+      - ./config.yaml:/app/config.yaml
+    entrypoint: [ "sh", "-c", "sleep 1 && ./myapp" ]
+
+  postgres:
+    image: postgres:14
+    container_name: wb-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 17051989
+      POSTGRES_DB: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  redis:
+    image: redis:7
+    container_name: wb-redis
+    restart: always
+    ports:
+      - "6379:6379"
+
+volumes:
+  pgdata:
+    driver: local
